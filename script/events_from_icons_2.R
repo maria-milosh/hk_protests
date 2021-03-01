@@ -5,8 +5,8 @@
 # Setup -------------------------------------------------------------------
 
 pacman::p_load(tidyverse, wrapr, RSQLite, DBI, lubridate)
-
-setwd("/Users/mariamilosh/Dropbox/HK")
+setwd("~")
+setwd("Dropbox/HK")
 
 options(digits = 17)
 
@@ -15,7 +15,7 @@ set.seed(124)
 
 db <- DBI::dbConnect(RSQLite::SQLite(), dbname = 'Events_db/icons_to_events.db')
 
-load('Cached/milestone_january.Rdata')
+# load('Cached/milestone_january.Rdata')
 
 # -------------------------------------------------------------------------
 

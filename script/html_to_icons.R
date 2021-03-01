@@ -1,9 +1,8 @@
 #!/usr/local/bin/Rscript
 
-
 # Setup -------------------------------------------------------------------
 
-setwd('/Users/mariamilosh/Dropbox/HK/')
+setwd('/Users/mmilosh/Dropbox/HK/')
 pacman::p_load(tidyverse, rvest, wrapr, foreach, parallel, doParallel)
 
 options(digits = 17)
@@ -90,6 +89,8 @@ num2deg <- function(zoom, xtile, ytile) {
 }
 
 
+
+
 # Loop --------------------------------------------------------------------
 
 
@@ -99,12 +100,10 @@ num2deg <- function(zoom, xtile, ytile) {
 # registerDoParallel(cl)
 
 
-for (copy in list.files('HTMLs', full.names = T)) {
-# foreach (copy = list.files('HTMLs', full.names = T), .verbose = T) %dopar% {
-  # copy <- list.files('HTMLs', full.names = T)[1] # [113239:129691]
-  cat('\n', copy, '|', format(Sys.time(), "%b %d %X"), '\n')
+for (copy in list.files('HTMLs', full.names = T)[129721:129691]) {
+  cat(copy, '|', format(Sys.time(), "%b %d %X"), '\n')
   
-  out_dir <- "/Users/mariamilosh/Dropbox/HK/Icons_to_tiles" %p% 
+  out_dir <- "/Users/mmilosh/Dropbox/hk_protests/data/Icons_to_tiles" %p% 
     (copy %>% str_extract('/.*\\.') %>% 
        str_extract('/\\d{4}-\\d{2}-\\d{2}'))
 
@@ -121,23 +120,28 @@ for (copy in list.files('HTMLs', full.names = T)) {
   icons <- prep %>% 
     html_nodes('.icon') %>% 
     html_attr('style') %>% 
-    
-    str_extract_all('\\d+px', simplify = T) %>% 
+    str_extract_all('(\\-)?\\d+px', simplify = T) %>% 
     as_tibble()
-  
   
   if ( nrow(icons) == 0 ) { 
     write_csv(icons,
               path = out_dir %p% '/' %p% str_remove_all(copy, 'HTMLs/|.txt') %p%
                 '.csv')
     write_lines(copy %p% ': 0 icons found, writing empty csv.', append = T,
-                path = 'Icons_to_files_logs/process.log')
+                path = '/Users/mmilosh/Dropbox/hk_protests/data/Icons_to_files_logs/process.log')
     next }
   
+  if ( length(prep %>%
+             html_nodes('.basemap-detail') %>% 
+             last() %>%
+             html_nodes('.leaflet-tile-loaded') %>% 
+             html_attr('src')) != 0 ) { next }
   
-  tiles_img <- prep %>%
-    html_nodes('.basemap') %>% 
-    last() %>% 
+  basemap <- prep %>%
+    html_nodes('.basemap')
+  
+  tiles_img <- basemap %>% 
+    last() %>% # the last = the most zoom
     html_nodes('.leaflet-tile-loaded') %>% 
     html_attr('src') %>% 
     str_replace_all('/', '_') %>% 
@@ -145,27 +149,31 @@ for (copy in list.files('HTMLs', full.names = T)) {
   
   if (length(tiles_img) == 0) { 
     write_lines(copy %p% ': 0 tiles found, aborted.', append = T,
-                path = 'Icons_to_files_logs/process.log')
+                path = '/Users/mmilosh/Dropbox/hk_protests/data/Icons_to_files_logs/process.log')
     next }
   
-  container <- prep %>% 
-    html_nodes('.basemap') %>% 
-    html_node('.leaflet-zoom-animated') %>% 
-    last() %>% 
+  max_zindex <- basemap %>% 
+    html_nodes('.leaflet-zoom-animated') %>% 
     html_attr('style') %>% 
-    str_extract_all('\\d+px', simplify = T) %>% 
+    str_extract('\\d{2}') %>% 
+    which.max()
+  
+  container <- basemap %>% 
+    html_nodes('.leaflet-zoom-animated') %>% 
+    .[max_zindex] %>% 
+    html_attr('style') %>% 
+    str_extract_all('(\\-)?\\d+px', simplify = T) %>% 
     .[1:2] %>% 
     str_remove(., pattern = 'px') %>% 
     as.numeric()
   
   
-  tiles_feat <- prep %>% 
-    html_nodes('.basemap') %>% 
+  tiles_feat <- basemap %>% 
     last() %>% 
     html_nodes('.leaflet-tile-loaded') %>% 
     html_attr('style') %>% 
     
-    str_extract_all('\\d+px|-\\d+px', simplify = T) %>% 
+    str_extract_all('(\\-)?\\d+px', simplify = T) %>% 
     
     as_tibble() %>% 
     select(x_tile = V3, y_tile = V4) %>% 
@@ -178,7 +186,6 @@ for (copy in list.files('HTMLs', full.names = T)) {
            y_tile_trans_up = y_tile + container[2],
            y_tile_trans_down = y_tile_trans_up + 256,
            
-           # file_path = tiles_img,
            tile_zoom = tiles_img %>%
              str_extract_all('light_\\d{2}|light-labels_\\d{2}') %>%
              str_remove_all('light_|light-labels_'),
@@ -274,17 +281,17 @@ for (copy in list.files('HTMLs', full.names = T)) {
 # stopCluster(cl)
 
 
-list.files('Icons_to_tiles', full.names = T,
-           recursive = T, pattern = '.csv') %>% length() ==
-(file.info(list.files('HTMLs/', full.names = T))$size > 40000) %>% sum()
+# list.files('Icons_to_tiles', full.names = T,
+#            recursive = T, pattern = '.csv') %>% length() ==
+# (file.info(list.files('HTMLs/', full.names = T))$size > 40000) %>% sum()
 
 
 
-setdiff(list.files('HTMLs/', full.names = T)[
-  file.info(list.files('HTMLs/', full.names = T))$size > 40000] %>% 
-  str_remove_all(., '.txt|^.*/'),
-    list.files('Icons_to_tiles',
-      recursive = T, pattern = '.csv') %>% str_remove_all('.csv|^.*/'))
+# setdiff(list.files('HTMLs/', full.names = T)[
+#   file.info(list.files('HTMLs/', full.names = T))$size > 40000] %>% 
+#   str_remove_all(., '.txt|^.*/'),
+#     list.files('Icons_to_tiles',
+#       recursive = T, pattern = '.csv') %>% str_remove_all('.csv|^.*/'))
 
 
 # lapply(list.files('Icons_to_tiles', full.names = T), R.utils::gzip )
@@ -293,3 +300,4 @@ setdiff(list.files('HTMLs/', full.names = T)[
 
 
 
+# now 2019-11-16-23-12.csv doesnt work
