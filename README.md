@@ -1,3 +1,3 @@
 # HK protests
 
-Data from the online map
+Data scraped from the online map of protests in Hong Kong.

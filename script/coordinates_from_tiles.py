@@ -1,18 +1,19 @@
-import mercantile, os, re, json
+import mercantile
+import json
+import os
+import re
 import pandas as pd
-
 
 
 tiles = {}
 tiles['tileinfo'] = []
 
-for map in os.listdir("/Users/mariamilosh/Dropbox/HK/MapTiles/"):
+for map in os.listdir("HK/MapTiles/"):
 
 	print(map)
 
 	coords = re.sub('^(.*?)_|.png', '', map).split('_')
 	coords = [int(x) for x in coords]
-
 
 	tiles['tileinfo'].append(
 		{'filename': map,
@@ -23,5 +24,5 @@ for map in os.listdir("/Users/mariamilosh/Dropbox/HK/MapTiles/"):
 		'botright': mercantile.ul(coords[1] + 1, coords[2] + 1, coords[0]),
 		'bbox': mercantile.xy_bounds(coords[1], coords[2], coords[0])})
 
-with open('/Users/mariamilosh/Dropbox/HK/MapTilesInfo/MapTilesInfo.txt', 'w') as outfile:
+with open('HK/MapTilesInfo/MapTilesInfo.txt', 'w') as outfile:
 	json.dump(tiles, outfile)
