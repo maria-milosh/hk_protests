@@ -11,7 +11,7 @@ def num2deg(zoom, xtile, ytile):
 tiles = {}
 tiles['tileinfo'] = []
 
-for map in os.listdir("/Users/mariamilosh/Dropbox/HK/MapTiles/"):
+for map in os.listdir("../../HK/MapTiles/"):
 
 	print(map)
 
@@ -29,7 +29,7 @@ for map in os.listdir("/Users/mariamilosh/Dropbox/HK/MapTiles/"):
 
 # check above 
 
-with open('/Users/mariamilosh/Dropbox/HK/MapTilesInfo/MapTilesInfo_full.txt', 'w') as outfile:
+with open('../../HK/MapTilesInfo/MapTilesInfo_full.txt', 'w') as outfile:
 	json.dump(tiles, outfile)
 
 
